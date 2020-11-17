@@ -21,17 +21,17 @@ potter-docsgen:
       repos:
       - name: 'potter-hub'
         path: 'gardener/potter-hub'
-        branch: 'master'
+        branch: 'main'
         cfg_name: 'github_com'
         trigger: true
       - name: 'potter-controller'
         path: 'gardener/potter-controller'
-        branch: 'master'
+        branch: 'main'
         cfg_name: 'github_com'
         trigger: true
       - name: 'potter-docs'
         path: 'gardener/potter-docs'
-        branch: 'master'
+        branch: 'main'
         cfg_name: 'github_com'
         trigger: false
       traits:
