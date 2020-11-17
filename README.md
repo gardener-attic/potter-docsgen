@@ -1,8 +1,8 @@
 # Potter Docs Generator
 
-This repository contains the build tools, configuration, web framework, etc. for the generating the Potter docs. For site source content including documentation, see the `/docs` directory in the [/gardener/potter-hub](https://github.com/gardener/documentation/) and [/gardener/potter-controller](https://github.com/gardener/documentation/) repos. The repository of the generated website is [/gardener/potter-docs](https://github.com/gardener/potter-docs). It is served via [GitHub Pages](https://pages.github.com/).
+This repository contains the build tools, configuration, web framework, etc. for the generating the Potter docs. For site source content including documentation, see the `/docs` directory in the [/gardener/potter-hub](https://github.com/gardener/potter-hub) and [/gardener/potter-controller](https://github.com/gardener/potter-controller) repos. The repository of the generated website is [/gardener/potter-docs](https://github.com/gardener/potter-docs). It is served via [GitHub Pages](https://pages.github.com/).
 
-# Dev Setup
+## Dev Setup
 
 **Prerequisites**
 

@@ -1,4 +1,4 @@
-baseURL = "https://github.wdf.sap.corp/pages/k8s-cp-integration/js-generated-website/"
+baseURL = "https://github.com/gardener/potter-docs/"
 title = "Potter"
 theme = "learn"
 metaDataFormat = "yaml"
@@ -22,7 +22,7 @@ disableHugoGeneratorInject = true
     tabWidth = 4
 
 [params]
-  editURL = "https://github.com/gardener/potter-docs/edit/master/website/"
+  editURL = ""
   issueURL = "https://github.com/gardener/potter-hub/issues"
   copyright = "Copyright 2020 Potter project authors."
   description = "Project Potter Website"
