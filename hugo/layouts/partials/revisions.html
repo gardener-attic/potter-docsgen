@@ -1,0 +1,36 @@
+{{ $curPage := .Page.Section }}
+{{ $s := "" }}
+{{ $v := "/" }}
+{{- range $revision := $.Scratch.Get "revisions" -}}
+{{ if eq $curPage .dirPath }}
+{{$s = .version}}
+{{$v =  .url}}
+{{end}}
+{{end}}
+
+<a id="docSelector">{{ $.Scratch.Get "linkTitle" }} {{$s}}</a>
+<div id="docOptions" class="doc-options">
+    <ul>
+        {{- range $revision := $.Scratch.Get "revisions" -}}
+        <li>
+            {{ $relLink := strings.TrimPrefix $v $.Page.RelPermalink }}
+            {{ $filePath := printf "%s/%s" .dirPath $relLink }}
+            {{ $url := $revision.url }}
+            {{ if (fileExists $filePath)}}
+            {{ $url = printf "%s%s" .url $relLink }}
+            {{ else }}
+            {{ $url = printf "%s/%s/%s" $.Site.BaseURL .url "home"}}
+            {{ end}}
+            {{ if eq $curPage .dirPath  }}
+            <a href="{{$url}}" class="activeVersion">{{ $.Scratch.Get "linkTitle" }}
+                {{$revision.version}}
+            </a>
+            {{ else }}
+            <a href="{{$url}}">{{ $.Scratch.Get "linkTitle" }}
+                {{$revision.version}}
+            </a>
+            {{end}}
+        </li>
+        {{- end -}}
+    </ul>
+</div>

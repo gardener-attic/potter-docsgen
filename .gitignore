@@ -1,0 +1,8 @@
+.idea
+hugo/public
+hugo/resources
+node_modules
+hugo/content/*
+!hugo/content/contribute
+dev/
+env/

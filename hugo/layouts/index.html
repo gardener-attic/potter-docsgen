@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="{{ .Page.Language | default "en" }}" class="js csstransforms3d">
+
+  <head>
+    {{ partial "meta.html" . }}
+    <title>{{ with .Title }}{{ . }}{{ else }}{{ with .Site.title }}{{ . }}{{ end }}{{ end }}</title>
+    <link rel="icon" type="image/x-icon" href='{{"images/favicon.ico" | absURL }}'>
+    <link rel="icon" type="image/png"    href='{{"images/favicon-32x32.png" | absURL }}' sizes="32x32">
+    <link rel="icon" type="image/png"    href='{{"images/favicon-16x16.png" | absURL }}' sizes="16x16">
+    
+    {{ partial "google-tags-manager.html" . }}
+
+    {{- $assetBusting := not .Site.Params.disableAssetsBusting -}}
+    <!-- Library CSS
+      –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+    <link rel="stylesheet" href="{{"css/normalize.css" | relURL}}{{ if $assetBusting }}?{{ now.Unix }}{{ end }}">
+    <link rel="stylesheet" href="{{"css/skeleton.css" | relURL}}{{ if $assetBusting }}?{{ now.Unix }}{{ end }}">
+    <link rel="stylesheet" href="{{"css/font-awesome.css" | relURL}}{{ if $assetBusting }}?{{ now.Unix }}{{ end }}">
+    <link rel="stylesheet" href="{{"css/slick.css" | relURL}}{{ if $assetBusting }}?{{ now.Unix }}{{ end }}">
+    <link rel="stylesheet" href="{{"css/slick-theme.css" | relURL}}{{ if $assetBusting }}?{{ now.Unix }}{{ end }}">
+
+    <link rel="preload" href="{{"fonts/BentonSansBook/BentonSans-Book.woff2" | relURL}}{{ if $assetBusting }}?{{ now.Unix }}{{ end }}" as="font" type="font/woff2" crossorigin="anonymous">
+
+    <!-- Website CSS
+      –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+    {{ $options := (dict "targetPath" (print "css/gardener.css") "outputStyle" "compressed" "enableSourceMap" true ) }}
+    {{ $style := resources.Get (print "sass/gardener.scss") | resources.ToCSS $options | resources.Fingerprint }}
+    <link rel="stylesheet" href="{{ $style.RelPermalink }}">
+
+    <link rel="stylesheet" href="{{"css/auto-complete.css" | relURL}}{{ if $assetBusting }}?{{ now.Unix }}{{ end }}">
+    
+    <!-- Scripts (web pack required in the future)
+      –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+    <script src="{{"js/resizesensor.js" | relURL}}{{ if $assetBusting }}?{{ now.Unix }}{{ end }}"></script>
+    <script src="{{"js/jquery.min.js" | relURL}}{{ if $assetBusting }}?{{ now.Unix }}{{ end }}"></script>
+    <script src="{{"js/jquery.tmpl.js" | relURL}}{{ if $assetBusting }}?{{ now.Unix }}{{ end }}"></script>
+    <script src="{{"js/vivus.js" | relURL}}{{ if $assetBusting }}?{{ now.Unix }}{{ end }}"></script>
+    <script src="{{"js/jquery.sticky.js" | relURL}}{{ if $assetBusting }}?{{ now.Unix }}{{ end }}"></script>
+    <script src="{{"js/jquery.easing.js" | relURL}}{{ if $assetBusting }}?{{ now.Unix }}{{ end }}"></script>
+    <script src="{{"js/fixed.js" | relURL}}{{ if $assetBusting }}?{{ now.Unix }}{{ end }}"></script>
+    <script src="{{"js/scrollreveal.js" | relURL}}{{ if $assetBusting }}?{{ now.Unix }}{{ end }}"></script>
+    <script src="{{"js/counter.js" | relURL}}{{ if $assetBusting }}?{{ now.Unix }}{{ end }}"></script>
+    <script src="{{"js/slick.js" | relURL}}{{ if $assetBusting }}?{{ now.Unix }}{{ end }}"></script>
+    <script src="{{"js/toastr.js" | relURL}}{{ if $assetBusting }}?{{ now.Unix }}{{ end }}"></script>
+    <script src="{{"js/jso.js" | relURL}}{{ if $assetBusting }}?{{ now.Unix }}{{ end }}"></script>
+    <script src="{{"js/inlineSVG.js"| relURL}}{{ if $assetBusting }}?{{ now.Unix }}{{ end }}"></script>
+  </head>
+
+  <body data-url="{{ .RelPermalink }}">
+
+    {{ partial "tln.html" . }}
+
+    <div class="landingpage">
+
+      <div id="hero">
+        <div class="container">
+          <div class="content">
+            <div class="hero-text">
+              <div class="sub-title">
+                  Managing Kubernetes Workload the Easy Way!
+              </div>
+              <div class="hero-actions">
+                {{- with .Site.GetPage "section" "documentation/020_getting-started" -}}
+                <a class="btn action-btn" href="{{ .URL }}"><span>Get Started</span></a>
+                {{- end -}}
+                <!--a class="action-btn movie" href="#kmsembed-1_7gd2gw78" data-lity><i class="fa fa-film"></i><span>Watch The Video</span></a-->
+              </div>
+            </div>
+            <div class="hero-img">
+              <img src="{{"images/logo-big.png" | relURL }}">
+            </div>
+          </div>
+          <!-- <div class="news">
+            {{ partial "news.html" . }}
+          </div> -->
+        </div>
+      </div>
+
+      <div class="section highlights sticky-nav-point" id="section00" style="background: #0f674e">
+        <div class="container">
+          <h2 class="title-1 is-centered">Get your Workload deployed consistently throughout your Kubernetes Landscape.</h2>
+          <div class="row is-centered">
+            <div class="one-third column">
+              <div class="sub-title">Kubernetes-Native</div>
+              <div>Kubernetes is the de-facto standard for managing modern container-based cloud applications.
+                With Potter on top of your <a href="https://gardener.cloud" target="_blank">Gardener Landscape</a>, you can finally start managing your Kubernetes Workload as its meant to be - central, declarative and based on Open Standards.</div>
+            </div>
+            <div class="one-third column">
+              <div class="sub-title">Leveraging Kubernetes Standards</div>
+              <div>Whatever you need to deploy to your K8s Clusters, Potter has you covered, as it currently already supports Helm Charts and KAPP-based deployment packages (with more to come).</div>
+            </div>
+            <div class="one-third column">
+              <div class="sub-title">Open Community Effort</div>
+             <div>The Potter project is open for collaborators and adopters. It aims at delivering a standard workload management solution that meets the needs of the K8s community and ecosystem.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      </div>
+      
+      {{- partial "footer.html" . -}}
+    
+    <script src="{{"js/counter.js" | relURL}}{{ if $assetBusting }}?{{ now.Unix }}{{ end }}"></script>
+    <script src="{{"js/main-lp.js" | relURL}}{{ if $assetBusting }}?{{ now.Unix }}{{ end }}"></script>
+
+    {{ partial "google-tags-manager-frame.html" . }}
+    {{ partial "tail-scripts.html" . }}
+
+  </body>
+  
+</html>

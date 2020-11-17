@@ -1,0 +1,38 @@
+baseURL = "https://github.wdf.sap.corp/pages/k8s-cp-integration/js-generated-website/"
+title = "Potter"
+theme = "learn"
+metaDataFormat = "yaml"
+languageCode = "en-US"
+defaultContentLanguage = "en"
+defaultContentLanguageInSubdir= true
+contentDir="content"
+enableGitInfo = true
+# Google Analytics Track ID
+googleAnalytics = ""
+disableHugoGeneratorInject = true
+
+[markup] 
+  [markup.goldmark]
+    [markup.goldmark.renderer]
+      unsafe = true  
+  [markup.highlight]
+    guessSyntax = true
+    noClasses = false
+    style = "vs"
+    tabWidth = 4
+
+[params]
+  editURL = "https://github.com/gardener/potter-docs/edit/master/website/"
+  issueURL = "https://github.com/gardener/potter-hub/issues"
+  copyright = "Copyright 2020 Potter project authors."
+  description = "Project Potter Website"
+  showVisitedLinks = true
+  themeVariant = "gardener"
+  # Google Tag Manager container
+  googleTagsManager = ""
+  # Google Search Console site verification tag
+  googleSiteVerificationTag = ""
+
+[outputs]
+home = [ "HTML", "RSS", "JSON"]
+
