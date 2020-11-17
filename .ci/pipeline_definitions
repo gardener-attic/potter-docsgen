@@ -20,14 +20,14 @@ potter-docsgen:
     head_update:
       repos:
       - name: 'potter-hub'
-        path: 'kubernetes/hub'
+        path: 'gardener/potter-hub'
         branch: 'master'
-        cfg_name: 'github_wdf_sap_corp'
+        cfg_name: 'github_com'
         trigger: true
       - name: 'potter-controller'
-        path: 'kubernetes/hub-controller'
+        path: 'gardener/potter-controller'
         branch: 'master'
-        cfg_name: 'github_wdf_sap_corp'
+        cfg_name: 'github_com'
         trigger: true
       - name: 'potter-docs'
         path: 'gardener/potter-docs'
