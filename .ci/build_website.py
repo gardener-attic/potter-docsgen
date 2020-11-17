@@ -87,7 +87,7 @@ def copyDocs(componentName, srcRepoDir):
         print(f"copy version {revision['version']}")
         copy_tree(src=srcDir, dst=f"{websiteGeneratorRepoDir}/hugo/content/{revision['dirPath']}")
 
-    with open(f"{revisionsFileDir}/{componentName}-revisions.json", "w") as outfile:
+    with open(f"{websiteGeneratorRepoDir}/hugo/data/{componentName}-revisions.json", "w") as outfile:
         json.dump(revisions, outfile)
 
 def buildWebsite():
