@@ -1,10 +1,14 @@
 #!/usr/bin/env python3
 
+import argparse
+from collections import deque
 from distutils.dir_util import copy_tree
+from distutils.version import LooseVersion
 import git
 import json
 import os
 import requests
+import semver
 import shutil
 import subprocess
 import tarfile
@@ -14,6 +18,11 @@ websiteGeneratorRepoDir = os.path.abspath(os.environ["SOURCE_PATH"])
 hubRepoDir = os.path.abspath(os.environ["POTTER_HUB_PATH"])
 controllerRepoDir = os.path.abspath(os.environ["POTTER_CONTROLLER_PATH"])
 generatedWebsiteRepoDir = os.path.abspath(os.environ["POTTER_DOCS_PATH"])
+
+parser = argparse.ArgumentParser()
+parser.add_argument("--websiteVersions", type=int, default=6, help="number of versions to include in the website")
+parser.add_argument("--dropdownVersions", type=int, default=3, help="number of versions to include in the dropdowns")
+args = parser.parse_args()
 
 class HugoClient:
     def __init__(self):
@@ -64,31 +73,29 @@ class HugoClient:
             raise Exception(f"website build failed: hugo returned {result}")
 
 def copyDocs(componentName, srcRepoDir):
-    print(f"copy docs for {componentName}")
-    
-    with open(f"{websiteGeneratorRepoDir}/{componentName}-doc-versions.txt") as f:
-        content = f.readlines()
-    versions = [v.strip() for v in content]
-    revisions = buildRevisions(componentName, versions)
-    
+    print(f"processing docs for {componentName}")
+
+    revisions = buildRevisions(componentName, srcRepoDir)
     gitRepo = git.Repo(srcRepoDir)
+
     for revision in revisions:
-        gitRepo.git.checkout(revision["version"])
+        print(f"processing doc revision {revision}")
+        gitRepo.git.checkout(revision["gitName"])
 
-        srcDir = f"{srcRepoDir}/docs"
-        if not os.path.isdir(srcDir):
-            print(f"skip version {revision['version']}: {srcDir} doesn't exist.")
+        docsDir = f"{srcRepoDir}/docs"
+        if not os.path.isdir(docsDir):
+            print(f"skip copy: {docsDir} doesn't exist.")
             continue
 
-        if not os.path.isfile(f"{srcDir}/_index.md"):
-            print(f"skip version {revision['version']}: {srcDir}/_index.md doesn't exist.")
+        if not os.path.isfile(f"{docsDir}/_index.md"):
+            print(f"skip copy: {docsDir}/_index.md doesn't exist.")
             continue
 
-        print(f"copy version {revision['version']}")
-        copy_tree(src=srcDir, dst=f"{websiteGeneratorRepoDir}/hugo/content/{revision['dirPath']}")
+        print(f"copy {docsDir}")
+        copy_tree(src=docsDir, dst=f"{websiteGeneratorRepoDir}/hugo/content/{revision['dirPath']}")
 
     with open(f"{websiteGeneratorRepoDir}/hugo/data/{componentName}-revisions.json", "w") as outfile:
-        json.dump(revisions, outfile)
+        json.dump(revisions[-args.dropdownVersions-1:-1], outfile)
 
 def buildWebsite():
     hugoClient = HugoClient()
@@ -96,27 +103,74 @@ def buildWebsite():
     copyDocs("controller", controllerRepoDir)
     hugoClient.runBuild()
 
-def commitGeneratedWebsiteRepo():
+def commitChangesToGeneratedWebsiteRepo():
     print(f"committing changes to {generatedWebsiteRepoDir}")
     generatedWebsiteRepo = git.Repo(generatedWebsiteRepoDir)
     generatedWebsiteRepo.git.add(".")
     generatedWebsiteRepo.git.commit("-m", "updates website")
 
-def buildRevisions(componentName, docVersions):
+def filterOutSameReleases(tags): 
+    tags.sort(key=LooseVersion)
+    tags = deque(tags)
+
+    filteredTags = []
+    while tags:
+        currentTag = tags.popleft()
+        currentVer = semver.VersionInfo.parse(currentTag)
+
+        if tags:
+            nextTag = tags[0]
+            nextVer = semver.VersionInfo.parse(nextTag)
+
+            if not (currentVer.major == nextVer.major and currentVer.minor == nextVer.minor):
+                filteredTags.append(currentTag)
+        else:
+            filteredTags.append(currentTag)
+    return filteredTags
+
+def buildRevisions(componentName, srcRepoDir):
+    gitRepo = git.Repo(srcRepoDir)
+
+    # list all tags of the git repo
+    # filter out tags that start with "v". these aren't from us but came in from the kubeapps merge
+    allTags = [tag.name for tag in gitRepo.tags if not tag.name.startswith("v")]
+    filteredTags = filterOutSameReleases(allTags)
+    filteredTags = filteredTags[-args.websiteVersions:]
+
     revisions = []
-    currentRevision = {
-        "version": f"{docVersions[0]}",
-        "dirPath": f"{componentName}-docs",
-        "url": f"/{componentName}-docs"
-    }
-    revisions.append(currentRevision)
-    for docVersion in docVersions[1:]:
+    for tag in filteredTags[:-1]:
         revision = {
-            "version": f"{docVersion}",
-            "dirPath": f"{componentName}-docs-{docVersion}",
-            "url": f"/{componentName}-docs-{docVersion}"
+            "version": f"{tag}",
+            "dirPath": f"{componentName}-docs-{tag}",
+            "url": f"/{componentName}-docs-{tag}",
+            "gitName": f"{tag}"
         }
         revisions.append(revision)
+
+    # latest revision must be in special directory
+    latestRevision = {
+        "version": f"{filteredTags[-1]}",
+        "dirPath": f"{componentName}-docs",
+        "url": f"/{componentName}-docs",
+        "gitName": f"{filteredTags[-1]}"
+    }
+    revisions.append(latestRevision)
+
+    # include docs from main branch
+    with open(f"{srcRepoDir}/VERSION") as f:
+        content = f.readlines()
+    if len(content) != 1:
+        raise Exception(f"{srcRepoDir}/VERSION is invalid. the file must only contain one line with the current version.")
+    mainBranchVer = content[0].strip()
+    mainBranchRevision = {
+        "version": f"{mainBranchVer}",
+        "dirPath": f"{componentName}-docs-{mainBranchVer}",
+        "url": f"/{componentName}-docs-{mainBranchVer}",
+        "gitName": "master"
+    }
+
+    revisions.append(mainBranchRevision)
+
     return revisions
 
 # hugo_extended doesn't run on a vanilla Alpine Linux (which is the base image of the CI/CD pipeline containers).
@@ -137,5 +191,5 @@ if __name__ == "__main__":
     if isRunningInCICDPipelineContainer():
         installAdditionalLinuxPackages()
     buildWebsite()
-    commitGeneratedWebsiteRepo()
+    commitChangesToGeneratedWebsiteRepo()
     print("finished website build")

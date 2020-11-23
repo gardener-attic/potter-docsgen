@@ -6,3 +6,4 @@ hugo/content/*
 !hugo/content/contribute
 dev/
 env/
+.vscode
