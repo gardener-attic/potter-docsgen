@@ -20,8 +20,7 @@ controllerRepoDir = os.path.abspath(os.environ["POTTER_CONTROLLER_PATH"])
 generatedWebsiteRepoDir = os.path.abspath(os.environ["POTTER_DOCS_PATH"])
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--websiteVersions", type=int, default=6, help="number of versions to include in the website")
-parser.add_argument("--dropdownVersions", type=int, default=3, help="number of versions to include in the dropdowns")
+parser.add_argument("--includedReleases", type=int, default=3, help="number of releases to build the docs")
 args = parser.parse_args()
 
 class HugoClient:
@@ -72,17 +71,30 @@ class HugoClient:
         if result.returncode != 0:
             raise Exception(f"website build failed: hugo returned {result}")
 
+def getLatestReleaseTags(gitRepo, numberOfIncludedReleases):
+    tags = gitRepo.tags
+
+    # filter out tags that start with "v". these aren't from us but came in from the kubeapps merge
+    tags = [tag.name for tag in tags if not tag.name.startswith("v")]
+    
+    # remove tags where higher patch releases are available
+    # [0.0.1, 0.1.0, 0.1.1. 0.1.2, 0.2.0] --> [0.0.1, 0.1.2, 0.2.0]
+    tags = removePatchedVersions(tags)
+
+    return tags[-numberOfIncludedReleases:]
+
 def copyDocs(componentName, srcRepoDir):
-    print(f"processing docs for {componentName}")
+    print(f"processing component {componentName} in repo {srcRepoDir}")
 
-    revisions = buildRevisions(componentName, srcRepoDir)
     gitRepo = git.Repo(srcRepoDir)
+    latestReleaseTags = getLatestReleaseTags(gitRepo, args.includedReleases)
+    revisions = []
+    docsDir = f"{srcRepoDir}/docs"
 
-    for revision in revisions:
-        print(f"processing doc revision {revision}")
-        gitRepo.git.checkout(revision["gitName"])
+    for releaseTag in latestReleaseTags[:-1]:
+        print(f"processing version {releaseTag}")
+        gitRepo.git.checkout(releaseTag)
 
-        docsDir = f"{srcRepoDir}/docs"
         if not os.path.isdir(docsDir):
             print(f"skip copy: {docsDir} doesn't exist.")
             continue
@@ -91,8 +103,40 @@ def copyDocs(componentName, srcRepoDir):
             print(f"skip copy: {docsDir}/_index.md doesn't exist.")
             continue
 
+        revision = {
+            "version": f"{releaseTag}",
+            "dirPath": f"{componentName}-docs-{releaseTag}",
+            "url": f"/{componentName}-docs-{releaseTag}",
+        }
+        revisions.append(revision)
+
         print(f"copy {docsDir}")
         copy_tree(src=docsDir, dst=f"{websiteGeneratorRepoDir}/hugo/content/{revision['dirPath']}")
+
+    # latest revision must be in special directory
+    latestRevision = {
+        "version": f"{latestReleaseTags[-1]}",
+        "dirPath": f"{componentName}-docs",
+        "url": f"/{componentName}-docs",
+    }
+    gitRepo.git.checkout(latestRevision["version"])
+    copy_tree(src=docsDir, dst=f"{websiteGeneratorRepoDir}/hugo/content/{latestRevision['dirPath']}")
+    revisions.append(latestRevision)
+
+    # include docs from main branch
+    gitRepo.git.checkout("master")
+    with open(f"{srcRepoDir}/VERSION") as f:
+        content = f.readlines()
+    if len(content) != 1:
+        raise Exception(f"{srcRepoDir}/VERSION is invalid. the file must only contain one line with the current version.")
+    mainBranchVer = content[0].strip()
+    mainBranchRevision = {
+        "version": f"{mainBranchVer}",
+        "dirPath": f"{componentName}-docs-{mainBranchVer}",
+        "url": f"/{componentName}-docs-{mainBranchVer}",
+    }
+    copy_tree(src=docsDir, dst=f"{websiteGeneratorRepoDir}/hugo/content/{mainBranchRevision['dirPath']}")
+    revisions.append(mainBranchRevision)
 
     with open(f"{websiteGeneratorRepoDir}/hugo/data/{componentName}-revisions.json", "w") as outfile:
         json.dump(revisions[-args.dropdownVersions-1:-1], outfile)
@@ -109,7 +153,7 @@ def commitChangesToGeneratedWebsiteRepo():
     generatedWebsiteRepo.git.add(".")
     generatedWebsiteRepo.git.commit("-m", "updates website")
 
-def filterOutSameReleases(tags): 
+def removePatchedVersions(tags): 
     tags.sort(key=LooseVersion)
     tags = deque(tags)
 
@@ -127,51 +171,6 @@ def filterOutSameReleases(tags):
         else:
             filteredTags.append(currentTag)
     return filteredTags
-
-def buildRevisions(componentName, srcRepoDir):
-    gitRepo = git.Repo(srcRepoDir)
-
-    # list all tags of the git repo
-    # filter out tags that start with "v". these aren't from us but came in from the kubeapps merge
-    allTags = [tag.name for tag in gitRepo.tags if not tag.name.startswith("v")]
-    filteredTags = filterOutSameReleases(allTags)
-    filteredTags = filteredTags[-args.websiteVersions:]
-
-    revisions = []
-    for tag in filteredTags[:-1]:
-        revision = {
-            "version": f"{tag}",
-            "dirPath": f"{componentName}-docs-{tag}",
-            "url": f"/{componentName}-docs-{tag}",
-            "gitName": f"{tag}"
-        }
-        revisions.append(revision)
-
-    # latest revision must be in special directory
-    latestRevision = {
-        "version": f"{filteredTags[-1]}",
-        "dirPath": f"{componentName}-docs",
-        "url": f"/{componentName}-docs",
-        "gitName": f"{filteredTags[-1]}"
-    }
-    revisions.append(latestRevision)
-
-    # include docs from main branch
-    with open(f"{srcRepoDir}/VERSION") as f:
-        content = f.readlines()
-    if len(content) != 1:
-        raise Exception(f"{srcRepoDir}/VERSION is invalid. the file must only contain one line with the current version.")
-    mainBranchVer = content[0].strip()
-    mainBranchRevision = {
-        "version": f"{mainBranchVer}",
-        "dirPath": f"{componentName}-docs-{mainBranchVer}",
-        "url": f"/{componentName}-docs-{mainBranchVer}",
-        "gitName": "master"
-    }
-
-    revisions.append(mainBranchRevision)
-
-    return revisions
 
 # hugo_extended doesn't run on a vanilla Alpine Linux (which is the base image of the CI/CD pipeline containers).
 # We therefore must install additional packages when running inside a container of the CI/CD pipeline.
