@@ -20,7 +20,7 @@ controllerRepoDir = os.path.abspath(os.environ["POTTER_CONTROLLER_PATH"])
 generatedWebsiteRepoDir = os.path.abspath(os.environ["POTTER_DOCS_PATH"])
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--includedReleases", type=int, default=3, help="number of releases to build the docs")
+parser.add_argument("--includedReleases", type=int, default=3, help="number of releases to include in the docs")
 args = parser.parse_args()
 
 class HugoClient:
@@ -88,10 +88,12 @@ def copyDocs(componentName, srcRepoDir):
 
     gitRepo = git.Repo(srcRepoDir)
     latestReleaseTags = getLatestReleaseTags(gitRepo, args.includedReleases)
+    latestReleaseTags.reverse()
     revisions = []
     docsDir = f"{srcRepoDir}/docs"
+    first = True
 
-    for releaseTag in latestReleaseTags[:-1]:
+    for releaseTag in latestReleaseTags:
         print(f"processing version {releaseTag}")
         gitRepo.git.checkout(releaseTag)
 
@@ -102,44 +104,28 @@ def copyDocs(componentName, srcRepoDir):
         if not os.path.isfile(f"{docsDir}/_index.md"):
             print(f"skip copy: {docsDir}/_index.md doesn't exist.")
             continue
-
-        revision = {
-            "version": f"{releaseTag}",
-            "dirPath": f"{componentName}-docs-{releaseTag}",
-            "url": f"/{componentName}-docs-{releaseTag}",
-        }
+        
+        if first:
+            # latest release must be in special directory
+            revision = {
+                "version": f"{releaseTag}",
+                "dirPath": f"{componentName}-docs",
+                "url": f"/{componentName}-docs",
+            }
+            first = False
+        else:
+            revision = {
+                "version": f"{releaseTag}",
+                "dirPath": f"{componentName}-docs-{releaseTag}",
+                "url": f"/{componentName}-docs-{releaseTag}",
+            }
         revisions.append(revision)
 
         print(f"copy {docsDir}")
         copy_tree(src=docsDir, dst=f"{websiteGeneratorRepoDir}/hugo/content/{revision['dirPath']}")
 
-    # latest revision must be in special directory
-    latestRevision = {
-        "version": f"{latestReleaseTags[-1]}",
-        "dirPath": f"{componentName}-docs",
-        "url": f"/{componentName}-docs",
-    }
-    gitRepo.git.checkout(latestRevision["version"])
-    copy_tree(src=docsDir, dst=f"{websiteGeneratorRepoDir}/hugo/content/{latestRevision['dirPath']}")
-    revisions.append(latestRevision)
-
-    # include docs from main branch
-    gitRepo.git.checkout("master")
-    with open(f"{srcRepoDir}/VERSION") as f:
-        content = f.readlines()
-    if len(content) != 1:
-        raise Exception(f"{srcRepoDir}/VERSION is invalid. the file must only contain one line with the current version.")
-    mainBranchVer = content[0].strip()
-    mainBranchRevision = {
-        "version": f"{mainBranchVer}",
-        "dirPath": f"{componentName}-docs-{mainBranchVer}",
-        "url": f"/{componentName}-docs-{mainBranchVer}",
-    }
-    copy_tree(src=docsDir, dst=f"{websiteGeneratorRepoDir}/hugo/content/{mainBranchRevision['dirPath']}")
-    revisions.append(mainBranchRevision)
-
     with open(f"{websiteGeneratorRepoDir}/hugo/data/{componentName}-revisions.json", "w") as outfile:
-        json.dump(revisions[-args.dropdownVersions-1:-1], outfile)
+        json.dump(revisions, outfile)
 
 def buildWebsite():
     hugoClient = HugoClient()
