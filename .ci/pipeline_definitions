@@ -1,4 +1,4 @@
-potter-docsgen:
+potter-docsgen-test:
   template: 'default'
   base_definition:
     traits:
