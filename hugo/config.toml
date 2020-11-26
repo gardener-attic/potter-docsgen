@@ -1,4 +1,4 @@
-baseURL = "https://github.com/gardener/potter-docs/"
+baseURL = "https://gardener.github.io/potter-docs/"
 title = "Potter"
 theme = "learn"
 metaDataFormat = "yaml"
