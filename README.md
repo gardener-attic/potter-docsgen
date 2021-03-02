@@ -38,7 +38,7 @@ $ pip install gardener-cicd-libs
 
 **Step 3** 
 
-Run the website build script via `python ./build_website.py`. This will copy the `/docs` directories from the local potter-hub and potter-controller repos into `<potter-docsgen-repo-path>/hugo/content`, for the versions specified in `hub-doc-versions.txt` and `controller-doc-versions.txt`. After that, the script runs the Hugo build to generate the website and commits the build output to the local potter-docs repo. ***It will not automatically push these changes into the remote repo.***
+Run the website build script via `python ./build_website.py`. This will copy the `/docs` directories from the local potter-hub and potter-controller repos into `<potter-docsgen-repo-path>/hugo/content`, for the last 3 releases (can be changed via the parameter `--includedReleases`). After that, the script runs the Hugo build to generate the website and commits the build output to the local potter-docs repo. ***It will not automatically push these changes into the remote repo.***
 
 **Step 4** 
 
