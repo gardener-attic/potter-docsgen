@@ -7,7 +7,7 @@ This repository contains the build tools, configuration, web framework, etc. for
 **Prerequisites**
 
 - Python 3.8
-- [Hugo](https://gohugo.io/)
+- [Hugo](https://gohugo.io/) (should be installed in the same version as in the CI/CD container, see the [website build script](./.ci/build_website.py) for the correct version)
 
 **Step 1**
 
@@ -36,13 +36,37 @@ $ source env/bin/activate
 $ pip install gardener-cicd-libs
 ```
 
-**Step 3** 
+Depending on whether you want to work on the actual CI script or want to run the website with local changes, perform the actions described in the following sections.
 
-Run the website build script via `python ./build_website.py`. This will copy the `/docs` directories from the local potter-hub and potter-controller repos into `<potter-docsgen-repo-path>/hugo/content`, for the last 3 releases (can be changed via the parameter `--includedReleases`). After that, the script runs the Hugo build to generate the website and commits the build output to the local potter-docs repo. ***It will not automatically push these changes into the remote repo.***
+**Running the website with local changes** 
 
-**Step 4** 
+When you want to run the website with local changes in the potter-hub or potter-controller repos, you should run the website build script via the following command:
 
-Run `hugo serve` in the `<potter-docsgen-repo-path>/hugo` directory. When perfoming changes in the `/docs` folder of the local potter-hub and potter-controller repos, you must reperform *Step 3* in order to sync the changes into the `/hugo/content` directory. 
+```
+./build_website.py --skip-build-and-commit=True --include-current-version-only=True
+```
+
+This will copy the `/docs` directories from the local potter-hub and potter-controller repos into `<potter-docsgen-repo-path>/hugo/content` and generate some metadata for Hugo. It will only include the current version of the `docs` directories on your filesystem.
+
+Now execute the following commands:
+
+```
+cd $SOURCE_PATH/hugo
+hugo serve
+```
+
+This will startup a local HTTP server which Hugo uses to serve the website.
+
+When perfoming changes in the `/docs` folder of the local potter-hub and potter-controller repos, you must rerun the website build script in order to sync the changes into the `/hugo/content` directory. 
 
 Sometimes it might also be necessary to stop `hugo serve`, manually delete the `/docs` directories from `/hugo/content`, rerun the website build script, and restart `hugo serve`.
 
+**Working on the website build script** 
+
+When you want to work on the website build script, you should run the website build script via the following command:
+
+```
+./build_website.py
+```
+
+This will build the website, write the build output to the `$POTTER_DOCS_PATH` repo, and actually commit all changes to the repo. ***You therefore shouldn't push the `$POTTER_DOCS_PATH` repo to origin.***

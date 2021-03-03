@@ -20,7 +20,9 @@ controllerRepoDir = os.path.abspath(os.environ["POTTER_CONTROLLER_PATH"])
 generatedWebsiteRepoDir = os.path.abspath(os.environ["POTTER_DOCS_PATH"])
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--includedReleases", type=int, default=3, help="number of releases to include in the docs")
+parser.add_argument("--included-releases", dest="includedReleases", type=int, default=3, help="number of releases to include in the docs")
+parser.add_argument("--skip-build-and-commit", dest="skipBuildAndCommit", type=bool, default=False, help="skip the hugo build and the subsequent commit of the build output to the $POTTER_DOCS_PATH repo")
+parser.add_argument("--include-current-version-only", dest="includeCurrentVersionOnly", type=bool, default=False, help="include only the current local version of $POTTER_HUB_PATH/docs and POTTER_CONTROLLER_PATH/docs. use this flag for generating the docs with local changes.")
 args = parser.parse_args()
 
 class HugoClient:
@@ -93,9 +95,14 @@ def copyDocs(componentName, srcRepoDir):
     docsDir = f"{srcRepoDir}/docs"
     first = True
 
+    if args.includeCurrentVersionOnly:
+        latestReleaseTags= ["current"]
+
     for releaseTag in latestReleaseTags:
         print(f"processing version {releaseTag}")
-        gitRepo.git.checkout(releaseTag)
+
+        if not args.includeCurrentVersionOnly:
+            gitRepo.git.checkout(releaseTag)
 
         if not os.path.isdir(docsDir):
             print(f"skip copy: {docsDir} doesn't exist.")
@@ -126,12 +133,6 @@ def copyDocs(componentName, srcRepoDir):
 
     with open(f"{websiteGeneratorRepoDir}/hugo/data/{componentName}-revisions.json", "w") as outfile:
         json.dump(revisions, outfile)
-
-def buildWebsite():
-    hugoClient = HugoClient()
-    copyDocs("hub", hubRepoDir)
-    copyDocs("controller", controllerRepoDir)
-    hugoClient.runBuild()
 
 def commitChangesToGeneratedWebsiteRepo():
     print(f"committing changes to {generatedWebsiteRepoDir}")
@@ -173,8 +174,15 @@ def isRunningInCICDPipelineContainer():
 
 if __name__ == "__main__":
     print("starting website build")
+
     if isRunningInCICDPipelineContainer():
         installAdditionalLinuxPackages()
-    buildWebsite()
-    commitChangesToGeneratedWebsiteRepo()
+
+    copyDocs("hub", hubRepoDir)
+    copyDocs("controller", controllerRepoDir)
+    if not args.skipBuildAndCommit:
+        hugoClient = HugoClient()
+        hugoClient.runBuild()
+        commitChangesToGeneratedWebsiteRepo()
+
     print("finished website build")
