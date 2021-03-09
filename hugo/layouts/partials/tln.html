@@ -59,10 +59,30 @@
         {{/* partial "search.html" . */}}
         <div class="navbar-collapse">
           <ul class="links">
-            {{ with .Site.GetPage "section" "contribute" }}
-            <li class="link {{if .IsAncestor $currentPage -}}active{{- end -}}">
-              <a href="{{ .URL }}">{{ .Title }}</a>
+            {{-  $url := print "/data/hub-revisions.json"  -}}
+            {{ $.Scratch.Set "linkTitle" "Hub Docs" }}
+            {{ $versions := slice }}
+            {{- if (fileExists $url) -}}
+            {{- $revisions := (getJSON $url) -}}
+            {{- $.Scratch.Set "revisions" $revisions -}}
+            {{- range $revision := $revisions -}}
+            {{ $versions = $versions | append $revision.version }}
+            {{end}}
+            {{- end -}}
+            {{- if or (in .Page.Section "hub-docs") (in  $versions .Page.Section ) -}}
+            <li class="link has-child active">
+              {{- if le (len $versions) 1 -}}
+              <a href="{{ (or .Params.remoteUrl .Params.redirectUrl .Permalink) | relURL }}">{{ $.Scratch.Get "linkTitle" }} {{ index ($versions) 0 }}</a>
+              {{- else -}}
+              {{ partial "revisions.html" . }}
+              {{ end }}
             </li>
+            {{ else }}
+            {{ with .Site.GetPage "section" "hub-docs" }}
+            <li class="link has-child">
+              <a href="{{ (or .Params.remoteUrl .Params.redirectUrl .Permalink) | relURL }}">{{ $.Scratch.Get "linkTitle" }}</a>
+            </li>
+            {{- end -}}
             {{- end -}}
             {{-  $url := print "/data/controller-revisions.json"  -}}
             {{ $.Scratch.Set "linkTitle" "Controller Docs" }}
@@ -89,36 +109,11 @@
             </li>
             {{- end -}}
             {{- end -}}
-            {{-  $url := print "/data/hub-revisions.json"  -}}
-            {{ $.Scratch.Set "linkTitle" "Hub Docs" }}
-            {{ $versions := slice }}
-            {{- if (fileExists $url) -}}
-            {{- $revisions := (getJSON $url) -}}
-            {{- $.Scratch.Set "revisions" $revisions -}}
-            {{- range $revision := $revisions -}}
-            {{ $versions = $versions | append $revision.version }}
-            {{end}}
-            {{- end -}}
-            {{- if or (in .Page.Section "hub-docs") (in  $versions .Page.Section ) -}}
-            <li class="link has-child active">
-              {{- if le (len $versions) 1 -}}
-              <a href="{{ (or .Params.remoteUrl .Params.redirectUrl .Permalink) | relURL }}">{{ $.Scratch.Get "linkTitle" }} {{ index ($versions) 0 }}</a>
-              {{- else -}}
-              {{ partial "revisions.html" . }}
-              {{ end }}
-            </li>
-            {{ else }}
-            {{ with .Site.GetPage "section" "hub-docs" }}
-            <li class="link has-child">
-              <a href="{{ (or .Params.remoteUrl .Params.redirectUrl .Permalink) | relURL }}">{{ $.Scratch.Get "linkTitle" }}</a>
-            </li>
-            {{- end -}}
-            {{- end -}}
-            {{ with .Site.GetPage "section" "contact" }}
+            {{ with .Site.GetPage "section" "contribute" }}
             <li class="link {{if .IsAncestor $currentPage -}}active{{- end -}}">
               <a href="{{ .URL }}">{{ .Title }}</a>
             </li>
-            {{ end }}
+            {{- end -}}
           </ul>
         </div>
       </div>
