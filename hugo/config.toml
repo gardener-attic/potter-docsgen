@@ -24,7 +24,7 @@ disableHugoGeneratorInject = true
 [params]
   editURL = ""
   issueURL = "https://github.com/gardener/potter-hub/issues"
-  copyright = "Copyright 2020 Potter project authors."
+  copyright = "Copyright 2021 Potter project authors."
   description = "Project Potter Website"
   showVisitedLinks = true
   themeVariant = "gardener"
