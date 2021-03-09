@@ -7,5 +7,3 @@ hugo/content/*
 dev/
 env/
 .vscode
-hugo/data/controller-revisions.json
-hugo/data/hub-revisions.json
